@@ -111,3 +111,17 @@ MYSQL_PASSWORD = "mysql"
 
 SQL_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 SQL_DATE_FORMAT = "%Y-%m-%d"
+
+# 邮件相关设置
+MAIL_FROM = 'bobbie_liu88@163.com'
+MAIL_HOST = 'smtp.163.com'
+MAIL_PORT = 25
+MAIL_USER = 'bobbie_liu88@163.com'
+# 邮箱授权码
+MAIL_PASS = 'xxxxx'
+
+# 邮件接收者列表
+RECEIVE_LIST = ['dev.bobbie@gmail.com','153247605@qq.com']
+
+# 邮件主题
+SUBJECT = '爬虫状态报告'

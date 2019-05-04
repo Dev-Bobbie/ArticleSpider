@@ -1,16 +1,21 @@
 # -*- coding: utf-8 -*-
 import re
+import time
+
 import scrapy
 import datetime
 from scrapy.http import Request
 from urllib import parse
 from scrapy.loader import ItemLoader
+from scrapy.mail import MailSender
+
 from ArticleSpider.items import JobBoleArticleItem, ArticleItemLoader
 from ArticleSpider.utils.common import get_md5
 from scrapy.xlib.pydispatch import dispatcher
 from scrapy import signals
 
 class JobboleSpider(scrapy.Spider):
+    start = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
     name = 'jobbole'
     allowed_domains = ['blog.jobbole.com']
     start_urls = ['http://blog.jobbole.com/all-posts/']
@@ -68,3 +73,42 @@ class JobboleSpider(scrapy.Spider):
 
 
         yield article_item
+
+
+    def close(self, reason):
+        """
+        爬虫邮件报告状态
+        """
+        # 结束时间
+        fnished = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
+        # 创建邮件发送对象
+        mail = MailSender.from_settings(self.settings)
+        # 邮件内容
+        spider_name = self.settings.get('BOT_NAME')
+        start_time = self.start
+        artice_success_request = self.crawler.stats.get_value("ArticleDetail_Success_Reqeust")
+        personpage_success_request = self.crawler.stats.get_value("PersonPage_Success_Reqeust")
+        failed_request = self.crawler.stats.get_value("Failed_Reqeust")
+        # 若请求成功, 则默认为0
+        if failed_request == None:
+            failed_request = 0
+        insert_into_success = self.crawler.stats.get_value("Success_InsertedInto_MySqlDB")
+        failed_db = self.crawler.stats.get_value("Failed_InsertInto_DB")
+        # 若插入成功, 则默认为0
+        if failed_db == None:
+            failed_db = 0
+        fnished_time = fnished
+        body = "爬虫名称: {}\n\n 开始时间: {}\n\n 文章请求成功总量：{}\n 个人信息获取总量：{}\n 请求失败总量：{} \n\n 数据库存储总量：{}\n 数据库存储失败总量：{}\n\n 结束时间  : {}\n".format(
+            spider_name,
+            start_time,
+            artice_success_request,
+            personpage_success_request,
+            failed_request,
+            insert_into_success,
+            failed_db,
+            fnished_time)
+        try:
+            # 发送邮件
+            mail.send(to=self.settings.get('RECEIVE_LIST'), subject=self.settings.get('SUBJECT'), body=body)
+        except Exception as e:
+            self.logger.error("Send Email Existing")
