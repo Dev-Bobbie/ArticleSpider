@@ -6,7 +6,7 @@
 # https://doc.scrapy.org/en/latest/topics/spider-middleware.html
 
 from scrapy import signals
-
+from talospider.utils import get_random_user_agent
 
 class ArticlespiderSpiderMiddleware(object):
     # Not all methods need to be defined. If a method is not defined,
