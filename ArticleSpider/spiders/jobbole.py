@@ -19,6 +19,7 @@ class JobboleSpider(scrapy.Spider):
     handle_httpstatus_list = [404]
 
     def __init__(self, **kwargs):
+        super(JobboleSpider, self).__init__(**kwargs)
         self.fail_urls = []
         dispatcher.connect(self.handle_spider_closed, signals.spider_closed)
 
@@ -44,7 +45,7 @@ class JobboleSpider(scrapy.Spider):
         #提取下一页并交给scrapy进行下载
         next_url = response.css(".next.page-numbers::attr(href)").extract_first("")
         if next_url:
-            yield Request(url=parse.urljoin(response.url, post_url), callback=self.parse)
+            yield Request(url=parse.urljoin(response.url, next_url), callback=self.parse)
 
     def parse_detail(self, response):
         article_item = JobBoleArticleItem()
