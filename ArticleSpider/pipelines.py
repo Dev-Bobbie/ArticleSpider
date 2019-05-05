@@ -4,6 +4,8 @@
 #
 # Don't forget to add your pipeline to the ITEM_PIPELINES setting
 # See: https://doc.scrapy.org/en/latest/topics/item-pipeline.html
+import logging
+
 import pymongo
 
 from scrapy import Item
@@ -31,10 +33,16 @@ class MysqlPipeline(object):
         params = (self["title"], self["create_date"], self["url"], self["url_object_id"], self["front_image_url"],
                   self["front_image_path"], self["praise_nums"], self["comment_nums"], self["fav_nums"], self["tags"],
                   self["content"])
-
-        self.cursor.execute(insert_sql, params)
-        self.conn.commit()
-
+        try:
+            self.cursor.execute(insert_sql, params)
+            # 记录成功插入的数据总量
+            spider.crawler.stats.inc_value('Success_InsertedInto_MySqlDB')
+            self.conn.commit()
+        except Exception as e:
+            logging.error("Failed Insert Into, Reason: {}".format(e.args))
+            # 记录插入失败的数据总量
+            spider.crawler.stats.inc_value('Failed_InsertInto_DB')
+            self.conn.rollback()
 
 class MysqlTwistedPipline(object):
     def __init__(self, dbpool):
@@ -57,18 +65,26 @@ class MysqlTwistedPipline(object):
 
     def process_item(self, item, spider):
         #使用twisted将mysql插入变成异步执行
-        query = self.dbpool.runInteraction(self.do_insert, item)
+        query = self.dbpool.runInteraction(self.do_insert, item,spider)
         query.addErrback(self.handle_error, item, spider) #处理异常
 
     def handle_error(self, failure, item, spider):
         #处理异步插入的异常
-        print (failure)
+        spider.crawler.stats.inc_value('Failed_InsertInto_DB')
+        _ = failure
+        print (_)
 
-    def do_insert(self, cursor, item):
+    def do_insert(self, cursor, item,spider):
         #执行具体的插入
         #根据不同的item 构建不同的sql语句并插入到mysql中
         insert_sql, params = item.get_insert_sql()
         cursor.execute(insert_sql, params)
+        # self.db.commit()   adbapi会自动提交数据的插入事实
+        # 记录成功插入数据库的数据总量
+        try:
+            spider.crawler.stats.inc_value('Success_InsertedInto_MySqlDB')
+        except Exception as e:
+            _ = e
 
 
 class ArticleImagePipeline(ImagesPipeline):

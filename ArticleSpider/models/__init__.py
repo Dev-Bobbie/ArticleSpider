@@ -3,7 +3,7 @@ from sqlalchemy import Column, Integer, String,DateTime
 from sqlalchemy.dialects.mysql import LONGTEXT
 from sqlalchemy import create_engine
 from sqlalchemy_utils import database_exists, create_database
-from settings import MYSQL_HOST,MYSQL_DBNAME,MYSQL_USER,MYSQL_PASSWORD
+from ArticleSpider.settings import MYSQL_HOST,MYSQL_DBNAME,MYSQL_USER,MYSQL_PASSWORD
 
 engine = create_engine(f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}:3306/{MYSQL_DBNAME}?charset=utf8", max_overflow=5)
 Base = declarative_base()

@@ -3,10 +3,8 @@ import re
 import time
 
 import scrapy
-import datetime
 from scrapy.http import Request
 from urllib import parse
-from scrapy.loader import ItemLoader
 from scrapy.mail import MailSender
 
 from ArticleSpider.items import JobBoleArticleItem, ArticleItemLoader
@@ -45,14 +43,19 @@ class JobboleSpider(scrapy.Spider):
         for post_node in post_nodes:
             image_url = post_node.css("img::attr(src)").extract_first("")
             post_url = post_node.css("::attr(href)").extract_first("")
-            yield Request(url=parse.urljoin(response.url, post_url), meta={"front_image_url":image_url}, callback=self.parse_detail)
+            yield Request(url=parse.urljoin(response.url, post_url), meta={"front_image_url":image_url}, callback=self.parse_detail,errback=self.error_back)
 
-        #提取下一页并交给scrapy进行下载
+        # 提取下一页并交给scrapy进行下载
         next_url = response.css(".next.page-numbers::attr(href)").extract_first("")
         if next_url:
-            yield Request(url=parse.urljoin(response.url, next_url), callback=self.parse)
+            yield Request(url=parse.urljoin(response.url, next_url), callback=self.parse,errback=self.error_back)
 
     def parse_detail(self, response):
+        try:
+           # 使用Crawl api记录文章详情页请求成功的Request
+           self.crawler.stats.inc_value("ArticleDetail_Success_Reqeust")
+        except Exception as e:
+           _ = e
         article_item = JobBoleArticleItem()
 
         #通过item loader加载item
@@ -74,6 +77,14 @@ class JobboleSpider(scrapy.Spider):
 
         yield article_item
 
+    def error_back(self, e):
+        """
+        使用Crawl API记录失败请求数量并Debug错误原因
+        """
+        self.logger.debug('Error: %s' % (str(e)))
+        self.crawler.stats.inc_value("Failed_Reqeust")
+        _ = self
+
 
     def close(self, reason):
         """
@@ -87,7 +98,6 @@ class JobboleSpider(scrapy.Spider):
         spider_name = self.settings.get('BOT_NAME')
         start_time = self.start
         artice_success_request = self.crawler.stats.get_value("ArticleDetail_Success_Reqeust")
-        personpage_success_request = self.crawler.stats.get_value("PersonPage_Success_Reqeust")
         failed_request = self.crawler.stats.get_value("Failed_Reqeust")
         # 若请求成功, 则默认为0
         if failed_request == None:
@@ -98,11 +108,10 @@ class JobboleSpider(scrapy.Spider):
         if failed_db == None:
             failed_db = 0
         fnished_time = fnished
-        body = "爬虫名称: {}\n\n 开始时间: {}\n\n 文章请求成功总量：{}\n 个人信息获取总量：{}\n 请求失败总量：{} \n\n 数据库存储总量：{}\n 数据库存储失败总量：{}\n\n 结束时间  : {}\n".format(
+        body = "爬虫名称: {}\n\n 开始时间: {}\n\n 文章请求成功总量：{}\n\n 请求失败总量：{} \n\n 数据库存储总量：{}\n 数据库存储失败总量：{}\n\n 结束时间  : {}\n".format(
             spider_name,
             start_time,
             artice_success_request,
-            personpage_success_request,
             failed_request,
             insert_into_success,
             failed_db,

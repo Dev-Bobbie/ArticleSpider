@@ -55,7 +55,9 @@ COOKIES_ENABLED = False
 # See https://doc.scrapy.org/en/latest/topics/downloader-middleware.html
 
 DOWNLOADER_MIDDLEWARES = {
-    'ArticleSpider.middlewares.RandomUserAgentMiddlware': 1,
+    'ArticleSpider.middlewares.RandomUserAgentMiddlware': 542,
+    # 'ArticleSpider.middlewares.ProxyMiddleware': 543,
+    'ArticleSpider.middlewares.DownloadRetryMiddleware': 544,
     # 'ArticleSpider.middlewares.ArticlespiderDownloaderMiddleware': 543,
 }
 
@@ -118,7 +120,14 @@ MAIL_HOST = 'smtp.163.com'
 MAIL_PORT = 25
 MAIL_USER = 'bobbie_liu88@163.com'
 # 邮箱授权码
-MAIL_PASS = 'xxxxx'
+MAIL_PASS = '123456d'
+
+
+# 代理服务器
+PROXY_SERVER = "http://http-cla.abuyun.com:9030"
+# 代理服务器隧道验证信息
+PROXY_USER = "HSAM1367RL55808C"
+PROXY_PASS = "4AE087EF4788C11C"
 
 # 邮件接收者列表
 RECEIVE_LIST = ['dev.bobbie@gmail.com','153247605@qq.com']
