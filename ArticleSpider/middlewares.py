@@ -127,7 +127,8 @@ class ProxyMiddleware(object):
         self.proxy_server = proxy_server
         self.proxy_user = proxy_user
         self.proxy_pass = proxy_pass
-        self.proxy_auth = "Basic " + base64.urlsafe_b64encode(bytes((self.proxy_user + ":" + self.proxy_pass), "ascii")).decode("utf8")
+        if self.proxy_user and self.proxy_pass:
+            self.proxy_auth = "Basic " + base64.urlsafe_b64encode(bytes((self.proxy_user + ":" + self.proxy_pass), "ascii")).decode("utf8")
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -140,7 +141,8 @@ class ProxyMiddleware(object):
 
     def process_request(self, request, spider):
         request.meta["proxy"] = self.proxy_server
-        request.headers["Proxy-Authorization"] = self.proxy_auth
+        if self.proxy_user and self.proxy_pass:
+            request.headers["Proxy-Authorization"] = self.proxy_auth
 
     def process_response(self, request, response, spider):
         return response
